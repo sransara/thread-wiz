@@ -1,2 +1,2 @@
 CompileFlags:
-  Add: [-Ibuild]
+  Add: [-Ibuild, -Iincludes]

@@ -14,7 +14,7 @@ VENDOR_LIBBPF_SRC_DIR := $(VENDOR_LIBBPF_DIR)/src
 APP_NAME := pthread-wiz
 
 BPF_FLAGS := -g -O2 -target bpf
-INCLUDES := -I$(BUILD_DIR)
+INCLUDES := -I$(BUILD_DIR) -Iincludes
 CPP_FLAGS := -g -Wall -Werror
 
 ifeq ($(V),1)
@@ -36,8 +36,12 @@ $(BUILD_DIR)/libbpf.a: $(wildcard $(VENDOR_LIBBPF_SRC_DIR)/*.[ch] $(VENDOR_LIBBP
 		INCLUDEDIR= LIBDIR= UAPIDIR= \
 		install
 
+$(BUILD_DIR)/vmlinux.h:
+	$(call msg,GEN-VMLINUX,$@)
+	$(Q)bpftool btf dump file /sys/kernel/btf/vmlinux format c > $@
+
 # Build BPF code
-$(BUILD_DIR)/%.bpf.o: $(BPF_SRC_DIR)/%.bpf.c $(BUILD_DIR)/libbpf.a
+$(BUILD_DIR)/%.bpf.o: $(BPF_SRC_DIR)/%.bpf.c $(BUILD_DIR)/libbpf.a $(BUILD_DIR)/vmlinux.h
 	$(call msg,BPF,$@)
 	$(Q)$(CLANG) $(BPF_FLAGS) $(INCLUDES) \
 		-c $(filter %.c,$^) -o $(patsubst %.bpf.o,%.tmp.bpf.o,$@)
