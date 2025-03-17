@@ -1,6 +1,7 @@
 # Tools
 CLANG ?= clang
 CC ?= gcc
+CXX ?= g++
 BPFTOOL ?= bpftool
 
 # Directories
@@ -15,7 +16,8 @@ APP_NAME := pthread-wiz
 
 BPF_FLAGS := -g -O2 -target bpf
 INCLUDES := -I$(BUILD_DIR) -Iincludes
-CPP_FLAGS := -g -Wall -Werror
+CPPFLAGS := -g -Wall -Wextra -Werror -std=c17
+LD_FLAGS := -lelf -lz
 
 ifeq ($(V),1)
 	Q =
@@ -53,22 +55,24 @@ $(BUILD_DIR)/%.skel.h: $(BUILD_DIR)/%.bpf.o
 	$(Q)$(BPFTOOL) gen skeleton $< > $@
 
 # Build user space code
-$(BUILD_DIR)/%.o: $(APP_SRC_DIR)/%.c $(BUILD_DIR)/%.skel.h
+$(BUILD_DIR)/%.o: $(APP_SRC_DIR)/%.c $(APP_SRC_DIR)/%.cc $(BUILD_DIR)/%.skel.h
 	$(call msg,CC,$@)
-	$(Q)$(CC) $(CPP_FLAGS) $(INCLUDES) -c $(filter %.c,$^) -o $@
+	$(Q)$(CC) $(CPPFLAGS) $(INCLUDES) -c $(filter %.c,$^) -o $@
+	$(call msg,C++,$@)
+	$(Q)$(CXX) $(CPPFLAGS) $(INCLUDES) -c $(filter %.cc,$^) -o $@
 
 # Build user space application binary
 $(BUILD_DIR)/%.exe: $(BUILD_DIR)/%.o $(BUILD_DIR)/libbpf.a
 	$(call msg,BINARY,$@)
-	$(Q)$(CC) $(CPP_FLAGS) $(INCLUDES) $^ -lelf -lz -o $@
+	$(Q)$(CC) $(CPPFLAGS) $(INCLUDES) $^ $(LD_FLAGS) -o $@
 
 .PHONY: bpf
-bpf: $(BUILD_DIR)/main.skel.h
+bpf: $(BUILD_DIR)/pthread_wiz.skel.h
 
 .PHONY: app
-app: $(BUILD_DIR)/main.exe
+app: $(BUILD_DIR)/pthread_wiz.exe
 	$(call msg,APP,Linking to executable)
-	$(Q)ln -sf main.exe $(BUILD_DIR)/$(APP_NAME)
+	$(Q)ln -sf pthread_wiz.exe $(BUILD_DIR)/$(APP_NAME)
 
 .PHONY: clean
 clean:
