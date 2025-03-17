@@ -42,6 +42,9 @@ $(BUILD_DIR)/vmlinux.h:
 	$(call msg,GEN-VMLINUX,$@)
 	$(Q)bpftool btf dump file /sys/kernel/btf/vmlinux format c > $@
 
+.PHONE: libbpf
+libbpf: $(BUILD_DIR)/libbpf.a $(BUILD_DIR)/vmlinux.h
+
 # Build BPF code
 $(BUILD_DIR)/%.bpf.o: $(BPF_SRC_DIR)/%.bpf.c $(BUILD_DIR)/libbpf.a $(BUILD_DIR)/vmlinux.h
 	$(call msg,BPF,$@)
