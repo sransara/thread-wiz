@@ -12,11 +12,11 @@ BUILD_DIR := build
 VENDOR_LIBBPF_DIR := vendor/libbpf
 VENDOR_LIBBPF_SRC_DIR := $(VENDOR_LIBBPF_DIR)/src
 
-APP_NAME := pthread-wiz
+APP_NAME := thread-wiz
 
 BPF_FLAGS := -g -O2 -target bpf
 INCLUDES := -I$(BUILD_DIR) -Iincludes
-CPPFLAGS := -g -Wall -Wextra -Werror -std=c17
+CPPFLAGS := -g -Wall -Wextra -Werror -std=c++17
 LD_FLAGS := -lelf -lz
 
 ifeq ($(V),1)
@@ -42,7 +42,7 @@ $(BUILD_DIR)/vmlinux.h:
 	$(call msg,GEN-VMLINUX,$@)
 	$(Q)bpftool btf dump file /sys/kernel/btf/vmlinux format c > $@
 
-.PHONE: libbpf
+.PHONY: libbpf
 libbpf: $(BUILD_DIR)/libbpf.a $(BUILD_DIR)/vmlinux.h
 
 # Build BPF code
@@ -58,16 +58,14 @@ $(BUILD_DIR)/%.skel.h: $(BUILD_DIR)/%.bpf.o
 	$(Q)$(BPFTOOL) gen skeleton $< > $@
 
 # Build user space code
-$(BUILD_DIR)/%.o: $(APP_SRC_DIR)/%.c $(APP_SRC_DIR)/%.cc $(BUILD_DIR)/%.skel.h
-	$(call msg,CC,$@)
-	$(Q)$(CC) $(CPPFLAGS) $(INCLUDES) -c $(filter %.c,$^) -o $@
-	$(call msg,C++,$@)
+$(BUILD_DIR)/%.o: $(APP_SRC_DIR)/%.cc $(BUILD_DIR)/%.skel.h
+	$(call msg,CPP,$@)
 	$(Q)$(CXX) $(CPPFLAGS) $(INCLUDES) -c $(filter %.cc,$^) -o $@
 
 # Build user space application binary
 $(BUILD_DIR)/%.exe: $(BUILD_DIR)/%.o $(BUILD_DIR)/libbpf.a
 	$(call msg,BINARY,$@)
-	$(Q)$(CC) $(CPPFLAGS) $(INCLUDES) $^ $(LD_FLAGS) -o $@
+	$(Q)$(CXX) $(CPPFLAGS) $(INCLUDES) $^ $(LD_FLAGS) -o $@
 
 .PHONY: bpf
 bpf: $(BUILD_DIR)/thread_wiz.skel.h
