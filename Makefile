@@ -70,12 +70,12 @@ $(BUILD_DIR)/%.exe: $(BUILD_DIR)/%.o $(BUILD_DIR)/libbpf.a
 	$(Q)$(CC) $(CPPFLAGS) $(INCLUDES) $^ $(LD_FLAGS) -o $@
 
 .PHONY: bpf
-bpf: $(BUILD_DIR)/pthread_wiz.skel.h
+bpf: $(BUILD_DIR)/thread_wiz.skel.h
 
 .PHONY: app
-app: $(BUILD_DIR)/pthread_wiz.exe
+app: $(BUILD_DIR)/thread_wiz.exe
 	$(call msg,APP,Linking to executable)
-	$(Q)ln -sf pthread_wiz.exe $(BUILD_DIR)/$(APP_NAME)
+	$(Q)ln -sf thread_wiz.exe $(BUILD_DIR)/$(APP_NAME)
 	echo "Run $(BUILD_DIR)/$(APP_NAME) to start the application"
 
 .PHONY: clean
