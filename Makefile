@@ -73,6 +73,7 @@ bpf: $(BUILD_DIR)/pthread_wiz.skel.h
 app: $(BUILD_DIR)/pthread_wiz.exe
 	$(call msg,APP,Linking to executable)
 	$(Q)ln -sf pthread_wiz.exe $(BUILD_DIR)/$(APP_NAME)
+	echo "Run $(BUILD_DIR)/$(APP_NAME) to start the application"
 
 .PHONY: clean
 clean:
