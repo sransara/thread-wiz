@@ -1,6 +1,49 @@
+#include "thread_wiz.bpf.h"
 #include "thread_wiz.skel.h"
+#include <bpf/libbpf.h>
+#include <csignal>
+#include <cstddef>
+#include <errno.h>
 #include <iostream>
 #include <string>
+
+namespace {
+volatile bool exiting = false;
+
+void sig_handler(int sig) {
+  (void)sig;
+  exiting = true;
+}
+
+int event_handler(void *ctx, void *data, size_t data_sz) {
+  (void)ctx;
+  (void)data_sz;
+
+  const struct event *event = static_cast<const struct event *>(data);
+  switch (event->type) {
+  case THREAD_TRACE_NEW:
+    std::cout << "New thread: " << event->event.event_trace_new.comm
+              << " (pid: " << event->event.event_trace_new.pid << ") on CPU "
+              << event->event.event_trace_new.target_cpu << "\n";
+    break;
+  case THREAD_TRACE_SWITCH:
+    std::cout << "Thread switch: " << event->event.event_trace_switch.prev_pid
+              << " (tgid: " << event->event.event_trace_switch.prev_tgid
+              << ") -> " << event->event.event_trace_switch.next_pid
+              << " on CPU " << event->event.event_trace_switch.cpu << "\n";
+    break;
+  case THREAD_TRACE_TERMINATE:
+    std::cout << "Thread terminate: " << event->event.event_trace_terminate.pid
+              << "\n";
+    break;
+  default:
+    std::cerr << "Unknown event type: " << event->type << "\n";
+    break;
+  }
+  return 0;
+}
+
+} // namespace
 
 int main(int argc, char **argv) {
   if (argc < 2) {
@@ -8,6 +51,9 @@ int main(int argc, char **argv) {
     return 1;
   }
   const int pid_for_observation = std::stoi(argv[1]);
+
+  signal(SIGINT, sig_handler);
+  signal(SIGTERM, sig_handler);
 
   thread_wiz_bpf *skel = thread_wiz_bpf::open();
   if (skel == nullptr) {
@@ -29,7 +75,29 @@ int main(int argc, char **argv) {
     return 1;
   }
   std::cout << "Successfully attached BPF handlers\n";
-  for (;;) {
+
+  struct ring_buffer *data_bus = ring_buffer__new(
+      bpf_map__fd(skel->maps.thread_wiz_bus), event_handler, nullptr, nullptr);
+  if (data_bus == nullptr) {
+    std::cerr << "Failed to create ring buffer\n";
+    return 1;
   }
+
+  const int epoll_timeout = 100; // ms
+  while (!exiting) {
+    err = ring_buffer__poll(data_bus, epoll_timeout);
+    if (err == -EINTR) {
+      // Interrupted by signal, exit
+      break;
+    }
+    if (err < 0) {
+      std::cerr << "Error polling ring buffer\n";
+      break;
+    }
+  }
+
+  ring_buffer__free(data_bus);
   thread_wiz_bpf::destroy(skel);
+
+  return 0;
 }
