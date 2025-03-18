@@ -80,3 +80,13 @@ app: $(BUILD_DIR)/thread_wiz.exe
 clean:
 	$(call msg,CLEAN)
 	$(Q)rm -rf $(BUILD_DIR)
+
+.PHONY: format
+format:
+	$(call msg,FORMAT)
+	$(Q)clang-format -i $(APP_SRC_DIR)/* $(BPF_SRC_DIR)/*
+
+.PHONY: lint
+lint:
+	$(call msg,LINT)
+	$(Q)clang-tidy $(APP_SRC_DIR)/* $(BPF_SRC_DIR)/* -- $(INCLUDES) $(CPPFLAGS)
