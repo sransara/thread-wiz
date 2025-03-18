@@ -17,7 +17,7 @@ APP_NAME := thread-wiz
 BPF_FLAGS := -g -O2 -target bpf
 INCLUDES := -I$(BUILD_DIR) -Iincludes
 CPPFLAGS := -g -Wall -Wextra -Werror -std=c++17
-LD_FLAGS := -lelf -lz
+LD_FLAGS := -lelf -lz -lboost_filesystem -lboost_process
 
 ifeq ($(V),1)
 	Q =
