@@ -30,7 +30,8 @@ int event_handler(void *ctx, void *data, size_t data_sz) {
     std::cout << "Thread switch: " << event->event.event_trace_switch.prev_pid
               << " (tgid: " << event->event.event_trace_switch.prev_tgid
               << ") -> " << event->event.event_trace_switch.next_pid
-              << " on CPU " << event->event.event_trace_switch.cpu << "\n";
+              << " (tgid: " << event->event.event_trace_switch.next_tgid
+              << ") on CPU " << event->event.event_trace_switch.cpu << "\n";
     break;
   case THREAD_TRACE_TERMINATE:
     std::cout << "Thread terminate: " << event->event.event_trace_terminate.pid

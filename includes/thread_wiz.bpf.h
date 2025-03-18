@@ -25,8 +25,9 @@ struct event_trace_switch {
   procstate_t prev_state;   // previous state
   cpuid_t cpu;              // origin cpu
   pid_t prev_pid;           // previous pid
-  pid_t prev_tgid;          // previous tgid
+  pid_t prev_tgid;          // previous thread group id
   pid_t next_pid;           // next scheduled pid
+  pid_t next_tgid;          // next scheduled thread group id
 };
 
 struct event_trace_terminate {
