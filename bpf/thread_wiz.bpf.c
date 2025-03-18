@@ -55,8 +55,9 @@ int handle_switch(struct trace_event_raw_sched_switch *ctx) {
   // if neither the previous nor the next task is under observation, return
   struct task_struct *ptask = bpf_task_from_pid(ctx->prev_pid);
   struct task_struct *ntask = bpf_task_from_pid(ctx->next_pid);
-  if (!is_process_under_observation(ptask) &&
-      !is_process_under_observation(ntask)) {
+  bool prev_is_observed = is_process_under_observation(ptask);
+  bool next_is_observed = is_process_under_observation(ntask);
+  if (!prev_is_observed && !next_is_observed) {
     if (ptask != NULL) {
       bpf_task_release(ptask);
     }
@@ -94,6 +95,8 @@ int handle_switch(struct trace_event_raw_sched_switch *ctx) {
   event_trace_switch->prev_tgid = prev_tgid;
   event_trace_switch->next_pid = ctx->next_pid;
   event_trace_switch->next_tgid = next_tgid;
+  event_trace_switch->prev_is_observed = prev_is_observed;
+  event_trace_switch->next_is_observed = next_is_observed;
 
   bpf_ringbuf_submit(event, 0);
   return 0;

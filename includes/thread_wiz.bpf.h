@@ -28,6 +28,8 @@ struct event_trace_switch {
   pid_t prev_tgid;          // previous thread group id
   pid_t next_pid;           // next scheduled pid
   pid_t next_tgid;          // next scheduled thread group id
+  bool prev_is_observed; // flag to indicate if the previous thread was observed
+  bool next_is_observed; // flag to indicate if the next thread is observed
 };
 
 struct event_trace_terminate {
