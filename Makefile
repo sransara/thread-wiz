@@ -58,12 +58,15 @@ $(BUILD_DIR)/%.skel.h: $(BUILD_DIR)/%.bpf.o
 	$(Q)$(BPFTOOL) gen skeleton $< > $@
 
 # Build user space code
-$(BUILD_DIR)/%.o: $(APP_SRC_DIR)/%.cc $(BUILD_DIR)/%.skel.h
+SRC_FILES := $(wildcard $(APP_SRC_DIR)/*.cc)
+OBJ_FILES := $(patsubst $(APP_SRC_DIR)/%.cc,$(BUILD_DIR)/%.o,$(SRC_FILES))
+
+$(BUILD_DIR)/%.o: $(APP_SRC_DIR)/%.cc  $(BUILD_DIR)/thread_wiz.skel.h
 	$(call msg,CPP,$@)
-	$(Q)$(CXX) $(CPPFLAGS) $(INCLUDES) -c $(filter %.cc,$^) -o $@
+	$(Q)$(CXX) $(CPPFLAGS) $(INCLUDES) -c $(filter %.cc,$^)  -o $@
 
 # Build user space application binary
-$(BUILD_DIR)/%.exe: $(BUILD_DIR)/%.o $(BUILD_DIR)/libbpf.a
+$(BUILD_DIR)/$(APP_NAME).exe: $(OBJ_FILES) $(BUILD_DIR)/libbpf.a
 	$(call msg,BINARY,$@)
 	$(Q)$(CXX) $(CPPFLAGS) $(INCLUDES) $^ $(LD_FLAGS) -o $@
 
@@ -71,9 +74,9 @@ $(BUILD_DIR)/%.exe: $(BUILD_DIR)/%.o $(BUILD_DIR)/libbpf.a
 bpf: $(BUILD_DIR)/thread_wiz.skel.h
 
 .PHONY: app
-app: $(BUILD_DIR)/thread_wiz.exe
+app: $(BUILD_DIR)/$(APP_NAME).exe
 	$(call msg,APP,Linking to executable)
-	$(Q)ln -sf thread_wiz.exe $(BUILD_DIR)/$(APP_NAME)
+	$(Q)ln -sf $(APP_NAME).exe $(BUILD_DIR)/$(APP_NAME)
 	echo "Run $(BUILD_DIR)/$(APP_NAME) to start the application"
 
 .PHONY: clean
