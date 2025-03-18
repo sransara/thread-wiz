@@ -1,5 +1,6 @@
 #include "event_handler.h"
 #include "thread_wiz.skel.h"
+#include "web_child.h"
 #include <bpf/libbpf.h>
 #include <csignal>
 #include <errno.h>
@@ -53,6 +54,10 @@ int main(int argc, char **argv) {
     std::cerr << "Failed to create ring buffer\n";
     return 1;
   }
+  err = open_web_process();
+  if (err != 0) {
+    return 1;
+  }
 
   const int epoll_timeout = 100; // ms
   while (!exiting) {
@@ -68,6 +73,7 @@ int main(int argc, char **argv) {
   }
 
   ring_buffer__free(data_bus);
+  close_web_process();
   thread_wiz_bpf::destroy(skel);
 
   return 0;
