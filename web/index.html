@@ -13,7 +13,7 @@
         width: 100px;
       }
       .thread-box {
-        position: relative;
+        position: absolute;
         width: 100%;
         background-color: aquamarine;
         border: 1px solid black;
@@ -23,6 +23,16 @@
   <body>
     <h1>Thread Activity Visualization</h1>
     <div id="app">
+      <div>
+        <label for="timescale">Timescale Divisor (ms):</label>
+        <input
+          id="timescale"
+          type="number"
+          v-model.number="timescaleDivisor"
+          min="1"
+          style="margin-bottom: 20px"
+        />
+      </div>
       <div
         v-for="(threads, cpu) in cpuThreads"
         :key="cpu"
@@ -56,19 +66,19 @@
           lastTime: null,
           pidColors: {},
           pidToCpu: {},
+          timescaleDivisor: 1_000_000, // Default timescale divisor in ms
         },
         methods: {
           getPosition(timestamp_ns) {
-            if (!this.startTime) {
-              this.startTime = timestamp_ns;
-            }
-            return (timestamp_ns - this.startTime) / 1_000_000; // Scale down for visualization in ms
+            return (timestamp_ns - this.startTime) / this.timescaleDivisor;
           },
           getHeight(start_timestamp_ns, end_timestamp_ns) {
             if (!this.lastTime || this.lastTime < end_timestamp_ns) {
               this.lastTime = end_timestamp_ns;
             }
-            return (end_timestamp_ns - start_timestamp_ns) / 1_000_000; // Scale down for visualization in ms
+            return (
+              (end_timestamp_ns - start_timestamp_ns) / this.timescaleDivisor
+            );
           },
           getColorForPid(pid) {
             if (!this.pidColors[pid]) {
@@ -98,6 +108,10 @@
                 pid: data.next_pid,
                 start_timestamp_ns: data.timestamp_ns,
               };
+              if (this.startTime === null) {
+                this.startTime = data.timestamp_ns;
+                console.log("Start time", this.startTime);
+              }
               return;
             } else {
               if (this.cpuStates[data.cpu].pid !== data.prev_pid) {
