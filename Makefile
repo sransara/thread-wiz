@@ -70,11 +70,15 @@ $(BUILD_DIR)/$(APP_NAME).exe: $(OBJ_FILES) $(BUILD_DIR)/libbpf.a
 	$(call msg,BINARY,$@)
 	$(Q)$(CXX) $(CPPFLAGS) $(INCLUDES) $^ $(LD_FLAGS) -o $@
 
+web/server: web/server.go
+	$(call msg,GO,$@)
+	$(Q)cd web && go build server.go
+
 .PHONY: bpf
 bpf: $(BUILD_DIR)/thread_wiz.skel.h
 
 .PHONY: app
-app: $(BUILD_DIR)/$(APP_NAME).exe
+app: $(BUILD_DIR)/$(APP_NAME).exe web/server
 	$(call msg,APP,Linking to executable)
 	$(Q)ln -sf $(APP_NAME).exe $(BUILD_DIR)/$(APP_NAME)
 	echo "Run $(BUILD_DIR)/$(APP_NAME) to start the application"

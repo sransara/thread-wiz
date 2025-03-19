@@ -60,6 +60,7 @@ Requirements:
 - [libbpf](https://github.com/libbpf/libbpf) - is packaged in as a Git submodule to this repo as recommended
 - clang - [to compile the eBPF objects](https://github.com/sransara/thread-wiz/blob/22169c994d55878cd783adf67dc2462982b3395c/Makefile#L17)
 - C++ compiler
+- Go compiler (for compiling the websocket server)
 - boost-process as a system lib (used [at the moment](src/web_child.cc) for writing to `stdin` of the webserver)
 - bpftool - supporting tool for [creating Linux kernel version independant eBPF headers](https://github.com/sransara/thread-wiz/blob/22169c994d55878cd783adf67dc2462982b3395c/Makefile#L43).
 
