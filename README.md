@@ -1,4 +1,4 @@
-# Thread Viz
+# Thread wiz
 
 Visualize thread and process activity by using kernel tracepoints
 
@@ -33,11 +33,18 @@ We could use tools that directly hook from user space into the kernel tracepoint
 
 Requirements:
 
-- Linux kernel 5.0+
+- Linux kernel 5.0+ for full eBPF support
+- [libbf](https://github.com/libbpf/libbpf) - is packaged in as a Git submodule to this repo as recommended
 - clang - [to compile the eBPF objects](https://github.com/sransara/thread-wiz/blob/22169c994d55878cd783adf67dc2462982b3395c/Makefile#L17)
 - C++ compiler
 - boost-process as a system lib (used [at the moment](src/web_child.cc) for writing to `stdin` of the webserver)
 - bpftool - supporting tool for [creating Linux kernel version independant eBPF headers](https://github.com/sransara/thread-wiz/blob/22169c994d55878cd783adf67dc2462982b3395c/Makefile#L43).
+
+Clone repository with vendored submodules (libbpf):
+
+```
+git clone --recurse-submodules https://github.com/sransara/thread-wiz.git
+```
 
 ```
 make app
