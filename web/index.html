@@ -1,30 +1,140 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Chat</title>
+    <title>Thread Activity Visualization</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+    <style>
+      .cpu-column {
+        display: inline-block;
+        vertical-align: top;
+        border-right: 1px solid #ccc;
+        border-left: 1px solid #ccc;
+        position: relative;
+        width: 100px;
+      }
+      .thread-box {
+        position: relative;
+        width: 100%;
+        background-color: aquamarine;
+        border: 1px solid black;
+      }
+    </style>
   </head>
   <body>
-    <h1>WebSocket Chat</h1>
-    <form action="" onsubmit="sendMessage(event)">
-      <input type="text" id="messageText" autocomplete="off" />
-      <button>Send</button>
-    </form>
-    <ul id="messages"></ul>
+    <h1>Thread Activity Visualization</h1>
+    <div id="app">
+      <div
+        v-for="(threads, cpu) in cpuThreads"
+        :key="cpu"
+        :style="{ display: 'inline-block',  margin: '10px', width: '100px' }"
+      >
+        <h2>CPU {{ cpu }}</h2>
+        <div
+          class="cpu-column"
+          :style="{ height: getPosition(lastTime) + 'px' }"
+        >
+          <div
+            v-for="thread in threads"
+            :key="thread.pid"
+            class="thread-box"
+            :data-event="thread.event"
+            :data-box="thread.box"
+            :style="{ top: getPosition(thread.start_timestamp_ns) + 'px', height: getHeight(thread.start_timestamp_ns, thread.end_timestamp_ns) + 'px', backgroundColor: getColorForPid(thread.pid) }"
+          >
+            {{ thread.pid }}
+          </div>
+        </div>
+      </div>
+    </div>
     <script>
-      var ws = new WebSocket("ws://localhost:8080/ws");
-      ws.onmessage = function (event) {
-        var messages = document.getElementById("messages");
-        var message = document.createElement("li");
-        var content = document.createTextNode(event.data);
-        message.appendChild(content);
-        messages.appendChild(message);
-      };
-      function sendMessage(event) {
-        var input = document.getElementById("messageText");
-        ws.send(input.value);
-        input.value = "";
-        event.preventDefault();
-      }
+      new Vue({
+        el: "#app",
+        data: {
+          cpuStates: {},
+          cpuThreads: {},
+          startTime: null,
+          lastTime: null,
+          pidColors: {},
+          pidToCpu: {},
+        },
+        methods: {
+          getPosition(timestamp_ns) {
+            if (!this.startTime) {
+              this.startTime = timestamp_ns;
+            }
+            return (timestamp_ns - this.startTime) / 1_000_000; // Scale down for visualization in ms
+          },
+          getHeight(start_timestamp_ns, end_timestamp_ns) {
+            if (!this.lastTime || this.lastTime < end_timestamp_ns) {
+              this.lastTime = end_timestamp_ns;
+            }
+            return (end_timestamp_ns - start_timestamp_ns) / 1_000_000; // Scale down for visualization in ms
+          },
+          getColorForPid(pid) {
+            if (!this.pidColors[pid]) {
+              // Generate a random color and store it
+              this.pidColors[pid] =
+                "#" +
+                Math.floor(Math.random() * 0xffffff)
+                  .toString(16)
+                  .padStart(6, "0");
+            }
+            return this.pidColors[pid];
+          },
+        },
+        created() {
+          var ws = new WebSocket("ws://localhost:8080/ws");
+          ws.onmessage = (event) => {
+            console.log(event.data);
+            var data = JSON.parse(event.data);
+            if (data.type !== "THREAD_TRACE_SWITCH") {
+              return;
+            }
+            if (!this.cpuStates[data.cpu]) {
+              if (!data.next_is_observed) {
+                return;
+              }
+              this.cpuStates[data.cpu] = {
+                pid: data.next_pid,
+                start_timestamp_ns: data.timestamp_ns,
+              };
+              return;
+            } else {
+              if (this.cpuStates[data.cpu].pid !== data.prev_pid) {
+                console.error(
+                  "CPU EXPECTED SWITCH ERROR",
+                  this.cpuStates[data.cpu].pid,
+                  data.prev_pid
+                );
+                this.cpuStates[data.cpu] = false;
+                return;
+              }
+              if (this.cpuThreads[data.cpu] === undefined) {
+                this.$set(this.cpuThreads, data.cpu, []);
+              }
+              var threadBox = {
+                pid: data.prev_pid,
+                start_timestamp_ns: this.cpuStates[data.cpu].start_timestamp_ns,
+                end_timestamp_ns: data.timestamp_ns,
+              };
+              this.cpuThreads[data.cpu].push({
+                ...threadBox,
+                event: JSON.stringify(data),
+                box: JSON.stringify(threadBox),
+              });
+
+              if (data.next_is_observed) {
+                this.cpuStates[data.cpu] = {
+                  pid: data.next_pid,
+                  start_timestamp_ns: data.timestamp_ns,
+                };
+              } else {
+                this.cpuStates[data.cpu] = false;
+              }
+            }
+          };
+        },
+      });
     </script>
   </body>
 </html>
