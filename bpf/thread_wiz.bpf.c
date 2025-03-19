@@ -30,9 +30,15 @@ bool is_process_under_observation(struct task_struct *task) {
 
 SEC("tp/sched/sched_wakeup_new")
 int handle_wakeup_new(struct trace_event_raw_sched_wakeup_template *ctx) {
-  struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+  struct task_struct *task = bpf_task_from_pid(ctx->pid);
   if (!is_process_under_observation(task)) {
+    if (task != NULL) {
+      bpf_task_release(task);
+    }
     return 0;
+  }
+  if (task != NULL) {
+    bpf_task_release(task);
   }
   struct event *event =
       bpf_ringbuf_reserve(&thread_wiz_bus, sizeof(struct event), 0);
@@ -53,9 +59,15 @@ int handle_wakeup_new(struct trace_event_raw_sched_wakeup_template *ctx) {
 SEC("tp/sched/sched_wakeup")
 int handle_wakeup(struct trace_event_raw_sched_wakeup_template *ctx) {
   timestamp_t timestamp_ns = bpf_ktime_get_ns();
-  struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+  struct task_struct *task = bpf_task_from_pid(ctx->pid);
   if (!is_process_under_observation(task)) {
+    if (task != NULL) {
+      bpf_task_release(task);
+    }
     return 0;
+  }
+  if (task != NULL) {
+    bpf_task_release(task);
   }
   struct event *event =
       bpf_ringbuf_reserve(&thread_wiz_bus, sizeof(struct event), 0);
