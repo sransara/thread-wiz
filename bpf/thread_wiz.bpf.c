@@ -4,7 +4,7 @@
 #include <bpf/bpf_core_read.h>
 #include <bpf/bpf_helpers.h>
 
-char LICENSE[] SEC("license") = "Dual BSD/GPL";
+char LICENSE[] SEC("license") = "Dual MIT/GPL";
 
 const int max_task_traversal = 10;
 
