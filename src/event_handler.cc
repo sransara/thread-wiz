@@ -21,6 +21,12 @@ int event_handler(void *ctx, void *data, size_t data_sz) {
              {"pid", event->event.event_trace_new.pid},
              {"target_cpu", event->event.event_trace_new.target_cpu}};
     break;
+  case THREAD_TRACE_WAKEUP:
+    jsono = {{"type", "THREAD_TRACE_WAKEUP"},
+             {"timestamp_ns", event->event.event_trace_wakeup.timestamp_ns},
+             {"pid", event->event.event_trace_wakeup.pid},
+             {"target_cpu", event->event.event_trace_wakeup.target_cpu}};
+    break;
   case THREAD_TRACE_SWITCH:
     jsono = {
         {"type", "THREAD_TRACE_SWITCH"},

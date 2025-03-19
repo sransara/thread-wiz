@@ -50,8 +50,31 @@ int handle_wakeup_new(struct trace_event_raw_sched_wakeup_template *ctx) {
   return 0;
 }
 
+SEC("tp/sched/sched_wakeup")
+int handle_wakeup(struct trace_event_raw_sched_wakeup_template *ctx) {
+  timestamp_t timestamp_ns = bpf_ktime_get_ns();
+  struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+  if (!is_process_under_observation(task)) {
+    return 0;
+  }
+  struct event *event =
+      bpf_ringbuf_reserve(&thread_wiz_bus, sizeof(struct event), 0);
+  if (event == NULL) {
+    return 0;
+  }
+  event->type = THREAD_TRACE_WAKEUP;
+  struct event_trace_wakeup *event_trace_wakeup =
+      &event->event.event_trace_wakeup;
+  event_trace_wakeup->timestamp_ns = timestamp_ns;
+  event_trace_wakeup->pid = ctx->pid;
+  event_trace_wakeup->target_cpu = ctx->target_cpu;
+  bpf_ringbuf_submit(event, 0);
+  return 0;
+}
+
 SEC("tp/sched/sched_switch")
 int handle_switch(struct trace_event_raw_sched_switch *ctx) {
+  timestamp_t timestamp_ns = bpf_ktime_get_ns();
   // if neither the previous nor the next task is under observation, return
   struct task_struct *ptask = bpf_task_from_pid(ctx->prev_pid);
   struct task_struct *ntask = bpf_task_from_pid(ctx->next_pid);
@@ -88,7 +111,7 @@ int handle_switch(struct trace_event_raw_sched_switch *ctx) {
 
   const cpuid_t cpu = bpf_get_smp_processor_id(); // get the active CPU
 
-  event_trace_switch->timestamp_ns = bpf_ktime_get_ns(); // get boot timestamp
+  event_trace_switch->timestamp_ns = timestamp_ns;
   event_trace_switch->prev_state = ctx->prev_state;
   event_trace_switch->cpu = cpu;
   event_trace_switch->prev_pid = ctx->prev_pid;
