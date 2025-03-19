@@ -21,6 +21,6 @@ if __name__ == "__main__":
     print(f"Process ID: {os.getpid()}")
     input("Press Enter to continue...")
 
-    numbers = [20, 25, 30, 40]  # List of Fibonacci numbers to calculate
+    numbers = [20, 30, 40, 35]  # List of Fibonacci numbers to calculate
     with ThreadPoolExecutor(max_workers=4) as executor:
         executor.map(calculate_fibonacci, numbers)
